@@ -1,4 +1,3 @@
-import { RandomBase } from "./RandomBase";
 import bigInt from 'big-integer';
 
 ﻿export default class SFMT {
