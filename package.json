@@ -1,0 +1,32 @@
+{
+  "name": "sfmtjs",
+  "version": "0.1.0",
+  "description": "Pure JavaScript implementation of the SFMT pseudo random number generator.",
+  "main": "lib/index.js",
+  "scripts": {
+    "babel": "babel",
+    "transpile": "babel src --out-dir lib",
+    "build": "npm run transpile",
+    "start": "node lib/index.js",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "SFMT",
+    "pseudo",
+    "random",
+    "number",
+    "generator"
+  ],
+  "author": "Zaksabeast",
+  "license": "BSD-3-Clause",
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-core": "^6.26.0",
+    "babel-polyfill": "^6.26.0",
+    "babel-preset-es2015": "^6.24.1",
+    "babel-preset-stage-0": "^6.24.1"
+  },
+  "dependencies": {
+    "big-integer": "^1.6.25"
+  }
+}
