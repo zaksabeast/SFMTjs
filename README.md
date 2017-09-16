@@ -23,6 +23,7 @@ sfmt.NextUInt64(); // Next 64 bit unsigned integer
 sfmt.NextInt64(); // Next 64 bit integer
 sfmt.NextUInt32(); // Next 32 bit unsigned integer
 sfmt.UInt32(); // Alias for NextUInt32 method
+sfmt.NextUInt32JSNum(); // Next 32 bit unsigned integer as a JS Number (not bigInt)
 ```
 
 ## Credits

@@ -31,6 +31,10 @@ import bigInt from 'big-integer';
         return this.NextUInt32();
     }
 
+    NextUInt32JSNum() {
+        return this.NextUInt32().toJSNumber();
+    }
+
     NextUInt64() {
         return bigInt(this.NextUInt32()).or(bigInt(this.NextUInt32()).shiftLeft(32));
     }
