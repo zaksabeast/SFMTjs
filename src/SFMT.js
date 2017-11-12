@@ -1,5 +1,16 @@
 import bigInt from 'big-integer';
 
+function leftShift32bitSafe(base, bits){
+    var temp = (base & (Math.pow(2,32-bits)-1)) * Math.pow(2,bits);
+    return temp;
+}
+
+function nextState(seed, add) {
+    var low = seed & 0xffff;
+    var a = (0x6c07 * low + (seed >>> 16) * 0x8965);
+    return 0x8965 * low + (a & 0xffff) * 0x10000 + add;
+}
+
 ﻿export default class SFMT {
 
     constructor(seed) {
@@ -26,44 +37,8 @@ import bigInt from 'big-integer';
         this.init_gen_rand(seed);
     }
 
-    UInt32() {
-        return this.NextUInt32();
-    }
-
     NextUInt64() {
         return bigInt(this.NextUInt32()).or(bigInt(this.NextUInt32()).shiftLeft(32));
-    }
-
-    NextInt64() {
-        return bigInt(this.NextUInt32()).shiftLeft(32).or(bigInt(this.NextUInt32()));
-    }
-
-    NextByte(buffer) { // buffer is Uint8Array
-        var i = 0;
-        var r;
-
-        while (i + 4 <= buffer.length) {
-            r = this.NextUInt32();
-            buffer[i++] = bigInt(r).and(0xFF);
-            buffer[i++] = bigInt(r).shiftRight(8).and(0xFF);
-            buffer[i++] = bigInt(r).shiftRight(16).and(0xFF);
-            buffer[i++] = bigInt(r).shiftRight(24).and(0xFF);
-        }
-
-        if (i >= buffer.length) return;
-        r = this.NextUInt32();
-        buffer[i++] = bigInt(r).and(0xFF);
-        if (i >= buffer.length) return;
-        buffer[i++] = bigInt(r).shiftRight(8).and(0xFF);
-        if (i >= buffer.length) return;
-        buffer[i++] = bigInt(r).shiftRight(16).and(0xFF);
-    }
-
-    NextDouble() {
-        var r1, r2;
-        r1 = this.NextUInt32();
-        r2 = this.NextUInt32();
-        return (bigInt(r1).multiply(2 << 11).add(r2).divide(2 << 53));
     }
 
     NextUInt32() {
@@ -80,8 +55,10 @@ import bigInt from 'big-integer';
         this.sfmt = new Uint32Array(this.N32);
         this.sfmt[0] = seed;
         //Initializes the SFMT array
-        for (i = 1; i < this.N32; i++)
-            this.sfmt[i] = bigInt(1812433253).multiply(bigInt(this.sfmt[i - 1]).xor(bigInt(this.sfmt[i - 1]).shiftRight(30))).add(i).and(0xFFFFFFFF);
+        for (i = 1; i < this.N32; i++) {
+            let temp = (this.sfmt[i - 1] ^ (this.sfmt[i - 1] >>> 30)) >>> 0;
+            this.sfmt[i] = nextState(temp, i);
+        }
         this.period_certification();
         this.idx = this.N32;
     }
@@ -117,10 +94,10 @@ import bigInt from 'big-integer';
 
         //Reshuffles the SFMT array
         do {
-            this.sfmt[a + 3] = bigInt(this.sfmt[a + 3]).xor(bigInt(this.sfmt[a + 3]).shiftLeft(8)).xor(bigInt(this.sfmt[a + 2]).shiftRight(24)).xor(bigInt(this.sfmt[c + 3]).shiftRight(8)).xor(bigInt(bigInt(this.sfmt[b + 3]).shiftRight(this.SR1)).and(this.MSK4)).xor(bigInt(this.sfmt[d + 3]).shiftLeft(this.SL1)).and(0xFFFFFFFF);
-            this.sfmt[a + 2] = bigInt(this.sfmt[a + 2]).xor(bigInt(this.sfmt[a + 2]).shiftLeft(8)).xor(bigInt(this.sfmt[a + 1]).shiftRight(24)).xor(bigInt(this.sfmt[c + 3]).shiftLeft(24)).xor(bigInt(this.sfmt[c + 2]).shiftRight(8)).xor(bigInt(bigInt(this.sfmt[b + 2]).shiftRight(this.SR1)).and(this.MSK3)).xor(bigInt(this.sfmt[d + 2]).shiftLeft(this.SL1)).and(0xFFFFFFFF);
-            this.sfmt[a + 1] = bigInt(this.sfmt[a + 1]).xor(bigInt(this.sfmt[a + 1]).shiftLeft(8)).xor(bigInt(this.sfmt[a + 0]).shiftRight(24)).xor(bigInt(this.sfmt[c + 2]).shiftLeft(24)).xor(bigInt(this.sfmt[c + 1]).shiftRight(8)).xor(bigInt(bigInt(this.sfmt[b + 1]).shiftRight(this.SR1)).and(this.MSK2)).xor(bigInt(this.sfmt[d + 1]).shiftLeft(this.SL1)).and(0xFFFFFFFF);
-            this.sfmt[a + 0] = bigInt(this.sfmt[a + 0]).xor(bigInt(this.sfmt[a + 0]).shiftLeft(8)).xor(bigInt(this.sfmt[c + 1]).shiftLeft(24)).xor(bigInt(this.sfmt[c + 0]).shiftRight(8)).xor(bigInt(bigInt(this.sfmt[b + 0]).shiftRight(this.SR1)).and(this.MSK1)).xor(bigInt(this.sfmt[d + 0]).shiftLeft(this.SL1)).and(0xFFFFFFFF);
+            this.sfmt[a + 3] = this.sfmt[a + 3] ^ leftShift32bitSafe(this.sfmt[a + 3], 8) ^ (this.sfmt[a + 2] >>> 24) ^ (this.sfmt[c + 3] >>> 8) ^ (((this.sfmt[b + 3] >>> this.SR1) & this.MSK4) >>> 0) ^ leftShift32bitSafe(this.sfmt[d + 3], this.SL1);
+            this.sfmt[a + 2] = this.sfmt[a + 2] ^ leftShift32bitSafe(this.sfmt[a + 2], 8) ^ (this.sfmt[a + 1] >>> 24) ^ leftShift32bitSafe(this.sfmt[c + 3], 24) ^ (this.sfmt[c + 2] >>> 8) ^ (((this.sfmt[b + 2] >>> this.SR1) & this.MSK3) >>> 0) ^ leftShift32bitSafe(this.sfmt[d + 2], this.SL1);
+            this.sfmt[a + 1] = this.sfmt[a + 1] ^ leftShift32bitSafe(this.sfmt[a + 1], 8) ^ (this.sfmt[a + 0] >>> 24) ^ leftShift32bitSafe(this.sfmt[c + 2], 24) ^ (this.sfmt[c + 1] >>> 8) ^ (((this.sfmt[b + 1] >>> this.SR1) & this.MSK2) >>> 0) ^ leftShift32bitSafe(this.sfmt[d + 1], this.SL1);
+            this.sfmt[a + 0] = this.sfmt[a + 0] ^ leftShift32bitSafe(this.sfmt[a + 0], 8) ^ leftShift32bitSafe(this.sfmt[c + 1], 24) ^ (this.sfmt[c + 0] >>> 8) ^ (((this.sfmt[b + 0] >>> this.SR1) & this.MSK1) >>> 0) ^ leftShift32bitSafe(this.sfmt[d + 0], this.SL1);
             c = d;
             d = a;
             a += 4;
