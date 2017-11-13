@@ -20,9 +20,7 @@ import SFMT from 'sfmtjs'; // Import SFMT
 let sfmt = new SFMT(0xAABBCCDD); // Seed with a number
 
 sfmt.NextUInt64(); // Next 64 bit unsigned integer (bigInt)
-sfmt.NextInt64(); // Next 64 bit integer (bigInt)
-sfmt.NextUInt32(); // Next 32 bit unsigned integer (not bigInt)
-sfmt.UInt32(); // Alias for NextUInt32 method (not bigInt)
+sfmt.NextUInt32(); // Next 32 bit unsigned integer 
 ```
 
 ## Credits
