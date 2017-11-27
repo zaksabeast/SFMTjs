@@ -1,5 +1,3 @@
-import bigInt from 'big-integer';
-
 function leftShift32bitSafe(base, bits){
     var temp = (base & (Math.pow(2,32-bits)-1)) * Math.pow(2,bits);
     return temp;
@@ -38,7 +36,9 @@ function nextState(seed, add) {
     }
 
     NextUInt64() {
-        return bigInt(this.NextUInt32()).or(bigInt(this.NextUInt32()).shiftLeft(32));
+      let lower = this.NextUInt32(),
+          upper = this.NextUInt32();
+      return [ upper, lower ];
     }
 
     NextUInt32() {
@@ -76,7 +76,7 @@ function nextState(seed, add) {
             work = 1;
             for (j = 0; j < 32; j++) {
                 if ((work & PARITY[i]) != 0) {
-                    this.sfmt[i] = bigInt(this.sfmt[i]).xor(work).and(0xFFFFFFFF);
+                    this.sfmt[i] = (this.sfmt[i] ^ work) >>> 0;
                     return;
                 }
                 work = work << 1;
