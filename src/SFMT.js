@@ -1,25 +1,9 @@
-import bigInt from 'big-integer';
-
-function leftShift32bitSafe(base, bits){
-    var temp = (base & (Math.pow(2,32-bits)-1)) * Math.pow(2,bits);
-    return temp;
-}
-
-function nextState(seed, add) {
-    var low = seed & 0xffff;
-    var a = (0x6c07 * low + (seed >>> 16) * 0x8965);
-    return 0x8965 * low + (a & 0xffff) * 0x10000 + add;
-}
-
-﻿export default class SFMT {
+export default class SFMT {
 
     constructor(seed) {
         this.MEXP = 19937;
-        this.POS1 = 122;
         this.SL1 = 18;
-        this.SL2 = 1;
         this.SR1 = 11;
-        this.SR2 = 1;
         this.MSK1 = 0xdfffffef;
         this.MSK2 = 0xddfecb7f;
         this.MSK3 = 0xbffaffff;
@@ -30,15 +14,13 @@ function nextState(seed, add) {
         this.PARITY4 = 0x13c9e684;
         this.N = 156;
         this.N32 = 624;
-        this.SL2_x8 = 8;
-        this.SR2_x8 = 8;
-        this.SL2_ix8 = 56;
-        this.SR2_ix8 = 56;
         this.init_gen_rand(seed);
     }
 
     NextUInt64() {
-        return bigInt(this.NextUInt32()).or(bigInt(this.NextUInt32()).shiftLeft(32));
+      var lower = this.NextUInt32();
+      var upper = this.NextUInt32();
+      return [ upper, lower ];
     }
 
     NextUInt32() {
@@ -51,13 +33,13 @@ function nextState(seed, add) {
     }
 
     init_gen_rand(seed) {
-        var i;
+        var s;
         this.sfmt = new Uint32Array(this.N32);
         this.sfmt[0] = seed;
         //Initializes the SFMT array
-        for (i = 1; i < this.N32; i++) {
-            let temp = (this.sfmt[i - 1] ^ (this.sfmt[i - 1] >>> 30)) >>> 0;
-            this.sfmt[i] = nextState(temp, i);
+        for (let i = 1; i < this.N32; i++) {
+            s = this.sfmt[i - 1] ^ (this.sfmt[i - 1] >>> 30);
+            this.sfmt[i] = ((((s >>> 16) * 0x6C078965) << 16) + (s & 0xffff) * 0x6C078965) + i;
         }
         this.period_certification();
         this.idx = this.N32;
@@ -70,13 +52,24 @@ function nextState(seed, add) {
         PARITY[2] = this.PARITY3;
         PARITY[3] = this.PARITY4;
         var i, j;
-        var work;
+        var work, inner;
+
+        for (i = 0; i < 4; i++)
+            inner ^= this.sfmt[i] & PARITY[i];
+
+        for (i = 16; i > 0; i >>= 1)
+            inner ^= inner >> i;
+
+        inner &= 1;
+
+        if (inner == 1)
+          return;
 
         for (i = 0; i < 4; i++) {
             work = 1;
             for (j = 0; j < 32; j++) {
                 if ((work & PARITY[i]) != 0) {
-                    this.sfmt[i] = bigInt(this.sfmt[i]).xor(work).and(0xFFFFFFFF);
+                    this.sfmt[i] = (this.sfmt[i] ^ work) >>> 0;
                     return;
                 }
                 work = work << 1;
@@ -94,10 +87,10 @@ function nextState(seed, add) {
 
         //Reshuffles the SFMT array
         do {
-            this.sfmt[a + 3] = this.sfmt[a + 3] ^ leftShift32bitSafe(this.sfmt[a + 3], 8) ^ (this.sfmt[a + 2] >>> 24) ^ (this.sfmt[c + 3] >>> 8) ^ (((this.sfmt[b + 3] >>> this.SR1) & this.MSK4) >>> 0) ^ leftShift32bitSafe(this.sfmt[d + 3], this.SL1);
-            this.sfmt[a + 2] = this.sfmt[a + 2] ^ leftShift32bitSafe(this.sfmt[a + 2], 8) ^ (this.sfmt[a + 1] >>> 24) ^ leftShift32bitSafe(this.sfmt[c + 3], 24) ^ (this.sfmt[c + 2] >>> 8) ^ (((this.sfmt[b + 2] >>> this.SR1) & this.MSK3) >>> 0) ^ leftShift32bitSafe(this.sfmt[d + 2], this.SL1);
-            this.sfmt[a + 1] = this.sfmt[a + 1] ^ leftShift32bitSafe(this.sfmt[a + 1], 8) ^ (this.sfmt[a + 0] >>> 24) ^ leftShift32bitSafe(this.sfmt[c + 2], 24) ^ (this.sfmt[c + 1] >>> 8) ^ (((this.sfmt[b + 1] >>> this.SR1) & this.MSK2) >>> 0) ^ leftShift32bitSafe(this.sfmt[d + 1], this.SL1);
-            this.sfmt[a + 0] = this.sfmt[a + 0] ^ leftShift32bitSafe(this.sfmt[a + 0], 8) ^ leftShift32bitSafe(this.sfmt[c + 1], 24) ^ (this.sfmt[c + 0] >>> 8) ^ (((this.sfmt[b + 0] >>> this.SR1) & this.MSK1) >>> 0) ^ leftShift32bitSafe(this.sfmt[d + 0], this.SL1);
+            this.sfmt[a + 3] = this.sfmt[a + 3] ^ (this.sfmt[a + 3] << 8) ^ (this.sfmt[a + 2] >>> 24) ^ (this.sfmt[c + 3] >>> 8) ^ (((this.sfmt[b + 3] >>> this.SR1) & this.MSK4) >>> 0) ^ (this.sfmt[d + 3] << this.SL1);
+            this.sfmt[a + 2] = this.sfmt[a + 2] ^ (this.sfmt[a + 2] << 8) ^ (this.sfmt[a + 1] >>> 24) ^ (this.sfmt[c + 3] << 24) ^ (this.sfmt[c + 2] >>> 8) ^ (((this.sfmt[b + 2] >>> this.SR1) & this.MSK3) >>> 0) ^ (this.sfmt[d + 2] << this.SL1);
+            this.sfmt[a + 1] = this.sfmt[a + 1] ^ (this.sfmt[a + 1] << 8) ^ (this.sfmt[a + 0] >>> 24) ^ (this.sfmt[c + 2] << 24) ^ (this.sfmt[c + 1] >>> 8) ^ (((this.sfmt[b + 1] >>> this.SR1) & this.MSK2) >>> 0) ^ (this.sfmt[d + 1] << this.SL1);
+            this.sfmt[a + 0] = this.sfmt[a + 0] ^ (this.sfmt[a + 0] << 8) ^ (this.sfmt[c + 1] << 24) ^ (this.sfmt[c + 0] >>> 8) ^ (((this.sfmt[b + 0] >>> this.SR1) & this.MSK1) >>> 0) ^ (this.sfmt[d + 0] << this.SL1);
             c = d;
             d = a;
             a += 4;

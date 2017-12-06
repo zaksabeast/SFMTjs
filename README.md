@@ -10,8 +10,6 @@ npm install --save git+https://github.com/zaksabeast/SFMTjs.git
 
 ## Usage
 
-Do to the 64 bit usage, this library returns a bigInt from the [big-integer](https://www.npmjs.com/package/big-integer) library.
-
 Please note, this library is not cryptographically secure:
 
 ```
@@ -19,8 +17,8 @@ import SFMT from 'sfmtjs'; // Import SFMT
 
 let sfmt = new SFMT(0xAABBCCDD); // Seed with a number
 
-sfmt.NextUInt64(); // Next 64 bit unsigned integer (bigInt)
-sfmt.NextUInt32(); // Next 32 bit unsigned integer 
+sfmt.NextUInt64(); // Next 64 bit unsigned integer (Stored upper and lower in 32 bit array)
+sfmt.NextUInt32(); // Next 32 bit unsigned integer
 ```
 
 ## Credits
