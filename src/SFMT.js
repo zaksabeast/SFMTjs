@@ -1,4 +1,4 @@
-export default class SFMT {
+class SFMT {
 
     constructor(seed) {
         this.MEXP = 19937;
@@ -17,13 +17,13 @@ export default class SFMT {
         this.init_gen_rand(seed);
     }
 
-    NextUInt64() {
+    GetNext64Bit() {
       var lower = this.NextUInt32();
       var upper = this.NextUInt32();
       return [ upper, lower ];
     }
 
-    NextUInt32() {
+    GetNext32Bit() {
         //Checks if current array has been used fully and needs reshuffle
         if (this.idx >= this.N32) {
             this.gen_rand_all_19937();
@@ -100,3 +100,5 @@ export default class SFMT {
         } while (a < this.N32);
     }
 }
+
+module.exports = { SFMT };

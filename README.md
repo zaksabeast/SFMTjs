@@ -13,12 +13,12 @@ npm install --save git+https://github.com/zaksabeast/SFMTjs.git
 Please note, this library is not cryptographically secure:
 
 ```
-import SFMT from 'sfmtjs'; // Import SFMT
+const { SFMT } = require('sfmtjs'); // Import SFMT
 
 let sfmt = new SFMT(0xAABBCCDD); // Seed with a number
 
-sfmt.NextUInt64(); // Next 64 bit unsigned integer (Stored upper and lower in 32 bit array)
-sfmt.NextUInt32(); // Next 32 bit unsigned integer
+sfmt.GetNext64Bit(); // Next 64 bit unsigned integer (Stored upper and lower in 32 bit array)
+sfmt.GetNext32Bit(); // Next 32 bit unsigned integer
 ```
 
 ## Credits
