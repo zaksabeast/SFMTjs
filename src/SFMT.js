@@ -18,8 +18,8 @@ class SFMT {
     }
 
     GetNext64Bit() {
-      var lower = this.NextUInt32();
-      var upper = this.NextUInt32();
+      var lower = this.GetNext32Bit();
+      var upper = this.GetNext32Bit();
       return [ upper, lower ];
     }
 
