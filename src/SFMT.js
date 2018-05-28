@@ -14,25 +14,25 @@ class SFMT {
         this.PARITY4 = 0x13c9e684;
         this.N = 156;
         this.N32 = 624;
-        this.init_gen_rand(seed);
+        this.Initialize(seed);
     }
 
     GetNext64Bit() {
-      var lower = this.GetNext32Bit();
-      var upper = this.GetNext32Bit();
-      return [ upper, lower ];
+        var lower = this.GetNext32Bit();
+        var upper = this.GetNext32Bit();
+        return [ upper, lower ];
     }
 
     GetNext32Bit() {
         //Checks if current array has been used fully and needs reshuffle
         if (this.idx >= this.N32) {
-            this.gen_rand_all_19937();
+            this.Shuffle();
             this.idx = 0;
         }
         return this.sfmt[this.idx++];
     }
 
-    init_gen_rand(seed) {
+    Initialize(seed) {
         var s;
         this.sfmt = new Uint32Array(this.N32);
         this.sfmt[0] = seed;
@@ -41,11 +41,11 @@ class SFMT {
             s = this.sfmt[i - 1] ^ (this.sfmt[i - 1] >>> 30);
             this.sfmt[i] = ((((s >>> 16) * 0x6C078965) << 16) + (s & 0xffff) * 0x6C078965) + i;
         }
-        this.period_certification();
+        this.Certify();
         this.idx = this.N32;
     }
 
-    period_certification() {
+    Certify() {
         var PARITY = new Uint32Array(4);
         PARITY[0] = this.PARITY1;
         PARITY[1] = this.PARITY2;
@@ -63,7 +63,7 @@ class SFMT {
         inner &= 1;
 
         if (inner == 1)
-          return;
+            return;
 
         for (i = 0; i < 4; i++) {
             work = 1;
@@ -77,7 +77,15 @@ class SFMT {
         }
     }
 
-    gen_rand_all_19937() {
+    Advance(frames) {
+        this.idx += frames * 2;
+        while (this.idx > 624) {
+            this.idx -= 624;
+            this.Shuffle();
+        }
+    }
+
+    Shuffle() {
         var a, b, c, d;
 
         a = 0;
@@ -102,3 +110,8 @@ class SFMT {
 }
 
 module.exports = { SFMT };
+
+let sfmt = new SFMT(0);
+
+for (let i = 0; i < 10; i++)
+    console.log(sfmt.GetNext64Bit());
